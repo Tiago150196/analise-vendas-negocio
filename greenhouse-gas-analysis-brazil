@@ -1,0 +1,1325 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "mount_file_id": "19zj1jMg-zTyxxUUQUB__1Yt7yE2zFttE",
+      "authorship_tag": "ABX9TyP9LyoravgaUdAyUl8T3OgI",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/Tiago150196/analise-vendas-negocio/blob/main/greenhouse-gas-analysis-brazil\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# 📊 Análise das Emissões de Gases do Efeito Estufa no Brasil (1970–2021)"
+      ],
+      "metadata": {
+        "id": "pKXTfGoVAMCX"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 🎯 Objetivo\n",
+        "Analisar as emissões de gases do efeito estufa no Brasil para identificar padrões por setor, tipo de gás e evolução ao longo do tempo."
+      ],
+      "metadata": {
+        "id": "cg99ZOQc_qI8"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 🎯 Perguntas de negócio\n",
+        "\n",
+        "- Quais gases mais contribuem para as emissões no Brasil?\n",
+        "- Quais setores são os maiores emissores?\n",
+        "- Como as emissões evoluíram ao longo do tempo?\n",
+        "- Existem setores que cresceram mais nos últimos anos?\n",
+        "- Quais estados apresentam maiores níveis de emissão?"
+      ],
+      "metadata": {
+        "id": "TuwHTZm0AVpp"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "t4Mo3BkYvdoK"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_gases = pd.read_excel ('/content/drive/MyDrive/1-SEEG10_GERAL-BR_UF_2022.10 (1).27-FINAL-SITE.xlsx' , sheet_name = 'GEE Estados')"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "ENlRFmw98bZt",
+        "outputId": "2b70b337-7b81-435b-d378-327396f9a1ac"
+      },
+      "execution_count": 65,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "/usr/local/lib/python3.12/dist-packages/openpyxl/worksheet/_reader.py:329: UserWarning: Unknown extension is not supported and will be removed\n",
+            "  warn(msg)\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Base de dados de emissões de gases do efeito estufa no Brasil\n",
+        "# Fonte: SEEG"
+      ],
+      "metadata": {
+        "id": "0SSc7xWMA9LJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(\"Dimensão do dataset:\", emissoes_gases.shape)\n",
+        "emissoes_gases.info()\n",
+        "emissoes_gases.head()"
+      ],
+      "metadata": {
+        "id": "3Ay-osr_8n1N"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Dimensão do dataset\n",
+        "print(\"Dimensão:\", emissoes_gases.shape)\n",
+        "\n",
+        "# Estrutura dos dados\n",
+        "emissoes_gases.info()\n",
+        "\n",
+        "# Primeiras linhas\n",
+        "emissoes_gases.head()"
+      ],
+      "metadata": {
+        "id": "U0hOftWp987C"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📊 Observações iniciais\n",
+        "\n",
+        "- A base possui mais de 100 mil registros e 63 colunas\n",
+        "- Existem variáveis categóricas relacionadas a setores, estados e tipos de gás\n",
+        "- Os dados de emissões estão distribuídos em colunas numéricas ao longo dos anos (1970–2021)\n",
+        "- Há presença de valores nulos em algumas colunas categóricas"
+      ],
+      "metadata": {
+        "id": "qwIihBmr-Wzq"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 Filtragem"
+      ],
+      "metadata": {
+        "id": "dDfI5Dfw_i8F"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Filtrar apenas CO2\n",
+        "co2 = emissoes_gases[emissoes_gases['Gás'] == 'CO2']\n",
+        "co2.head()"
+      ],
+      "metadata": {
+        "id": "Ufwyg50x-UcC"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Total de emissões por gás (somando todos os anos)\n",
+        "emissoes_gases.groupby('Gás').sum(numeric_only=True)"
+      ],
+      "metadata": {
+        "id": "N9as4OcF_e8A"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Nesta etapa, filtramos a base de dados para manter apenas informações relevantes para a análise.\n",
+        "\n",
+        "Foram removidos:\n",
+        "- Dados de remoção (valores negativos)\n",
+        "- Dados NCI (não contabilizados no inventário nacional)\n",
+        "- Dados de Bunker (emissões internacionais)\n",
+        "\n",
+        "Mantivemos apenas os dados classificados como \"Emissão\"."
+      ],
+      "metadata": {
+        "id": "qyJVeVmeDzdq"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Verificando categorias existentes\n",
+        "emissoes_gases['Emissão / Remoção / Bunker'].unique()\n",
+        "\n",
+        "# Filtrando apenas emissões\n",
+        "emissoes_gases = emissoes_gases[\n",
+        "    emissoes_gases['Emissão / Remoção / Bunker'] == 'Emissão'\n",
+        "]\n",
+        "\n",
+        "# Removendo coluna desnecessária\n",
+        "emissoes_gases = emissoes_gases.drop(columns='Emissão / Remoção / Bunker')\n",
+        "\n",
+        "# Verificando resultado\n",
+        "print(\"Nova dimensão:\", emissoes_gases.shape)\n",
+        "emissoes_gases.head()"
+      ],
+      "metadata": {
+        "id": "RVkxtKYJD2e2"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Justificativa\n",
+        "\n",
+        "A remoção desses dados garante que a análise seja focada exclusivamente nas emissões efetivas, evitando distorções causadas por valores negativos ou dados fora do escopo do inventário nacional."
+      ],
+      "metadata": {
+        "id": "RL5h8JGCD65v"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 análise de gás (coluna \"Gás\")"
+      ],
+      "metadata": {
+        "id": "6w_6V9uPEENg"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_gases['Gás'].value_counts()"
+      ],
+      "metadata": {
+        "id": "e_4u8zX-EAWH"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_gases.groupby('Gás').sum(numeric_only=True)"
+      ],
+      "metadata": {
+        "id": "qSngGVS2EHpw"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 🔄 Remodelagem dos dados"
+      ],
+      "metadata": {
+        "id": "s134OkpsHM_P"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Nesta etapa, transformamos o formato da base de dados para facilitar a análise.\n",
+        "\n",
+        "Originalmente, os anos estavam distribuídos em múltiplas colunas (formato wide).\n",
+        "Utilizamos o método `melt` para converter esses dados em um formato long, onde cada linha representa uma observação por ano.\n",
+        "\n",
+        "Essa transformação permite realizar análises temporais e agrupamentos de forma mais eficiente."
+      ],
+      "metadata": {
+        "id": "dcjH8muZHTZo"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Selecionando colunas de identificação\n",
+        "colunas_info = list(emissoes_gases.loc[:, 'Nível 1 - Setor':'Produto'].columns)\n",
+        "\n",
+        "# Selecionando colunas de anos\n",
+        "colunas_emissao = list(emissoes_gases.loc[:, 1970:2021].columns)\n",
+        "\n",
+        "# Transformando o DataFrame\n",
+        "emissoes_por_ano = emissoes_gases.melt(\n",
+        "    id_vars=colunas_info,\n",
+        "    value_vars=colunas_emissao,\n",
+        "    var_name='Ano',\n",
+        "    value_name='Emissão'\n",
+        ")\n",
+        "\n",
+        "# Visualizando\n",
+        "emissoes_por_ano.head()"
+      ],
+      "metadata": {
+        "id": "Q5puGDcIHW0h"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [],
+      "metadata": {
+        "id": "LLCSdldcHkoO"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 evolução ao longo do tempo"
+      ],
+      "metadata": {
+        "id": "nThCAWk_Hpwe"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Ano')['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "dvJbUEDxHe-0"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 qual gás mais polui"
+      ],
+      "metadata": {
+        "id": "Vd_9kQNQH2qz"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás')['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "EFCXSlXcHyyV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 análise temporal por gás"
+      ],
+      "metadata": {
+        "id": "VSJhs9qBH-Xn"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby(['Ano', 'Gás'])['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "C4cZyNFHH6pC"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight 1\n",
+        "\n",
+        "Observa-se uma tendência de crescimento nas emissões ao longo do tempo, com aceleração a partir dos anos 2000. Esse comportamento pode estar associado ao aumento da industrialização, expansão agrícola e maior consumo de energia."
+      ],
+      "metadata": {
+        "id": "yM97eEVYIQpM"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás')['Emissão'].sum().sort_values(ascending=False)"
+      ],
+      "metadata": {
+        "id": "zrFUxkQWIa7x"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Ano')['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "paI6UN7FIE5K"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_gases.loc[:,'Nível 1 - Setor':'Produto'].columns"
+      ],
+      "metadata": {
+        "id": "R2WVjbHpLSLa"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "colunas_info = list(emissoes_gases.loc[:,'Nível 1 - Setor':'Produto'].columns)\n",
+        "colunas_info"
+      ],
+      "metadata": {
+        "id": "8nHMV4h0LV8B"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "colunas_emissao = list(emissoes_gases.loc[:,1970:2021].columns)\n",
+        "colunas_emissao"
+      ],
+      "metadata": {
+        "id": "uj_TFA1ZLcAV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_gases.melt(id_vars = colunas_info, value_vars = colunas_emissao, var_name = 'Ano' , value_name = 'Emissão')"
+      ],
+      "metadata": {
+        "id": "0RSxGbCELoUU"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 🧪 Análise por tipo de gás"
+      ],
+      "metadata": {
+        "id": "3V6ka5dmMuTr"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano = emissoes_gases.melt(id_vars = colunas_info, value_vars = colunas_emissao, var_name = 'Ano' , value_name = 'Emissão')"
+      ],
+      "metadata": {
+        "id": "r8DojFK5LsqN"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás')"
+      ],
+      "metadata": {
+        "id": "nmt_pOlXMOdV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás').groups"
+      ],
+      "metadata": {
+        "id": "O3U8aRAYMQcu"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight\n",
+        "\n",
+        "O CO₂ equivalente (CO2e) apresenta o maior volume de emissões totais.\n",
+        "No entanto, essa métrica representa uma agregação de diferentes gases, sendo necessário analisar os gases individualmente para uma compreensão mais precisa.\n",
+        "\n",
+        "Entre os gases individuais, o CO₂ se destaca como principal responsável pelas emissões, indicando que estratégias de redução devem priorizar esse componente."
+      ],
+      "metadata": {
+        "id": "HwCzHxbtM3C9"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás').get_group('CO2 (t)')"
+      ],
+      "metadata": {
+        "id": "D9VIyuulMWI_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📊 Interpretação\n",
+        "\n",
+        "Observa-se uma concentração significativa das emissões em poucos tipos de gases, com destaque para o CO₂.\n",
+        "Isso indica que ações focadas nesses principais gases podem gerar maior impacto na redução das emissões totais."
+      ],
+      "metadata": {
+        "id": "0XfN-31_NGJR"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "gases = emissoes_por_ano.groupby('Gás')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False)\n",
+        "\n",
+        "gases.head(10).plot(kind='bar')\n",
+        "\n",
+        "plt.title('Top 10 gases mais emitidos')\n",
+        "plt.ylabel('Emissão total')\n",
+        "plt.xlabel('Gás')\n",
+        "\n",
+        "plt.xticks(rotation=45)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "HgFZiWPrNAYG"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Gráfico que mostra evolução de emissões ao longo do tempo"
+      ],
+      "metadata": {
+        "id": "YgnhzgOLNPg1"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Ano')['Emissão'].sum().plot()\n",
+        "plt.title('Evolução das emissões ao longo do tempo')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "4YNNx4SwNKNV"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 análise por setor"
+      ],
+      "metadata": {
+        "id": "uvPsq7snNhG4"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Nível 1 - Setor')['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "WNopIJM-NavJ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás').sum(numeric_only = True)"
+      ],
+      "metadata": {
+        "id": "vrn3RLkUOV97"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Gás')[['Emissão']].sum()"
+      ],
+      "metadata": {
+        "id": "JCbP0ty9OYsw"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_gas = emissoes_por_ano.groupby('Gás')[['Emissão']].sum()"
+      ],
+      "metadata": {
+        "id": "TueREA-gOa7e"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_gas = emissoes_por_ano.groupby('Gás')[['Emissão']].sum().sort_values('Emissão', ascending = False)\n",
+        "emissao_por_gas"
+      ],
+      "metadata": {
+        "id": "jEn-wv95OdbH"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_gas.plot(kind = 'barh', figsize = (10,6));"
+      ],
+      "metadata": {
+        "id": "NF-5tKh8OhBp"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_gas.iloc[0:9]"
+      ],
+      "metadata": {
+        "id": "mkbXiesHOkxR"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight principal\n",
+        "\n",
+        "Os gases do tipo CO₂ equivalente (CO2e) representam aproximadamente 99% das emissões totais no período analisado.\n",
+        "\n",
+        "No entanto, essa métrica agrega diferentes gases em uma única unidade, o que pode superestimar a participação do CO₂ na comparação com gases individuais.\n",
+        "\n",
+        "Portanto, é importante analisar separadamente os gases individuais para uma interpretação mais precisa."
+      ],
+      "metadata": {
+        "id": "qZk_ZhRbPBj3"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(f'A emissão de CO2 corresponde a {float((emissao_por_gas.iloc[0:9].sum()/emissao_por_gas.sum()).iloc[0])*100:.2f} % de emissão total de gases estufa no Brasil de 1970 a 2021.')"
+      ],
+      "metadata": {
+        "id": "GzXWnTJYOnOD"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_gas.head(10).plot(\n",
+        "    kind='barh',\n",
+        "    figsize=(10,6),\n",
+        "    title='Top 10 gases mais emitidos'\n",
+        ")"
+      ],
+      "metadata": {
+        "id": "ONq4E-qDPF5m"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Evolução temporal\n",
+        "\n",
+        "Observa-se uma tendência de crescimento das emissões ao longo do tempo, com intensificação a partir dos anos 2000. Esse comportamento pode estar associado ao aumento da atividade econômica, expansão agrícola e maior consumo de energia no país."
+      ],
+      "metadata": {
+        "id": "zYWbq4qTPSeZ"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Nível 1 - Setor')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False)"
+      ],
+      "metadata": {
+        "id": "RaiQEMHMPXpQ"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Setores\n",
+        "\n",
+        "O setor de Mudança de Uso da Terra e Floresta é o maior responsável pelas emissões no Brasil, superando significativamente os demais setores.\n",
+        "\n",
+        "Esse resultado indica que o desmatamento e mudanças no uso do solo têm um impacto maior do que a indústria ou energia, diferentemente de países desenvolvidos."
+      ],
+      "metadata": {
+        "id": "XvLEw9O4QTLL"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Nível 1 - Setor')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False) \\\n",
+        "    .plot(kind='bar', figsize=(10,5))\n",
+        "\n",
+        "plt.title('Emissões por setor')\n",
+        "plt.ylabel('Emissão total')\n",
+        "plt.xlabel('Setor')\n",
+        "plt.xticks(rotation=45)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "_VF2AOaoQL3C"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Estados com maior atividade agropecuária e desmatamento apresentam maiores níveis de emissão."
+      ],
+      "metadata": {
+        "id": "-MAJ-atHQ7DU"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_por_estado = emissoes_por_ano.groupby('Estado')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False)\n",
+        "\n",
+        "emissao_por_estado.head(10).plot(kind='bar', figsize=(10,5))\n",
+        "\n",
+        "plt.title('Top 10 estados mais emissores')\n",
+        "plt.ylabel('Emissão total')\n",
+        "plt.xlabel('Estado')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "jNwAwHeCQ1Lk"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "O crescimento das emissões está fortemente associado ao setor de uso da terra ao longo dos anos."
+      ],
+      "metadata": {
+        "id": "HS607sjaS3VM"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby(['Ano', 'Nível 1 - Setor'])['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .unstack() \\\n",
+        "    .plot(figsize=(12,6))\n",
+        "\n",
+        "plt.title('Evolução das emissões por setor')\n",
+        "plt.ylabel('Emissão')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "SdKierrbRZRO"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Apesar da presença de diversos gases, mais de 99% das emissões são dominadas por CO₂ equivalente, indicando alta concentração de impacto em poucos fatores."
+      ],
+      "metadata": {
+        "id": "Cs3jzT3GUIlX"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "plt.style.use('ggplot')"
+      ],
+      "metadata": {
+        "id": "R9PF--7YUNjG"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "evolucao = emissoes_por_ano.groupby('Ano')['Emissão'].sum()\n",
+        "\n",
+        "crescimento = ((evolucao.iloc[-1] - evolucao.iloc[0]) / evolucao.iloc[0]) * 100\n",
+        "\n",
+        "print(f'Crescimento total das emissões: {crescimento:.2f}%')"
+      ],
+      "metadata": {
+        "id": "zLuw4zEjUUZd"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "top_gases = emissoes_por_ano.groupby('Gás')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False) \\\n",
+        "    .head(5) \\\n",
+        "    .index\n",
+        "\n",
+        "emissoes_por_ano[emissoes_por_ano['Gás'].isin(top_gases)] \\\n",
+        "    .groupby(['Ano', 'Gás'])['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .unstack() \\\n",
+        "    .plot(figsize=(12,6))\n",
+        "\n",
+        "plt.title('Evolução dos principais gases')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "zrSFC51rTFFg"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Apesar da presença de diversos gases, mais de 99% das emissões são dominadas por CO₂ equivalente, indicando alta concentração de impacto em poucos fatores."
+      ],
+      "metadata": {
+        "id": "p4YsBAFSwgQ4"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight 1\n",
+        "O CO₂ é o principal responsável pelas emissões ao longo de todo o período analisado, representando a maior parcela dos gases emitidos.\n",
+        "\n",
+        "### 📌 Insight 2\n",
+        "O setor de energia apresenta crescimento consistente nas emissões após os anos 2000, indicando aumento da demanda energética.\n",
+        "\n",
+        "### 📌 Insight 3\n",
+        "Alguns setores apresentam queda recente, possivelmente relacionada a políticas ambientais ou mudanças econômicas."
+      ],
+      "metadata": {
+        "id": "2dgACo9KAsAN"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Nesta etapa, analisamos a relação entre os tipos de gases e os setores econômicos, com o objetivo de identificar quais atividades mais contribuem para a emissão de cada gás."
+      ],
+      "metadata": {
+        "id": "jye6JKB61g_E"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## 🔍 Relação entre gases e setores"
+      ],
+      "metadata": {
+        "id": "43C3Nsb81dUX"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor = emissoes_por_ano.groupby(\n",
+        "    ['Gás', 'Nível 1 - Setor']\n",
+        ")[['Emissão']].sum()"
+      ],
+      "metadata": {
+        "id": "1OJin18d1l0A"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "👉 Qual setor mais polui para CADA gás:"
+      ],
+      "metadata": {
+        "id": "ZUqSZbu31vVg"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.groupby(level=0)['Emissão'].idxmax()"
+      ],
+      "metadata": {
+        "id": "UXB7JAiO1pg4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "top_setores = emissoes_por_ano.groupby('Nível 1 - Setor')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False)\n",
+        "\n",
+        "top_setores.plot(kind='bar', figsize=(10,5))\n",
+        "\n",
+        "plt.title('Emissões por setor econômico')\n",
+        "plt.xticks(rotation=45)\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "ZEhLAvH92Gvv"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "pivot = emissoes_por_ano.pivot_table(\n",
+        "    values='Emissão',\n",
+        "    index='Nível 1 - Setor',\n",
+        "    columns='Gás',\n",
+        "    aggfunc='sum'\n",
+        ")\n",
+        "\n",
+        "pivot.head()"
+      ],
+      "metadata": {
+        "id": "cTNSTVey2MDh"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Nesta etapa, analisamos a relação entre gases e setores econômicos de forma bidirecional:\n",
+        "\n",
+        "- Identificamos qual setor mais contribui para a emissão de cada gás\n",
+        "- E também qual gás é mais relevante dentro de cada setor\n",
+        "\n",
+        "Essa análise permite entender melhor a origem das emissões e direcionar estratégias mais eficazes de redução."
+      ],
+      "metadata": {
+        "id": "15K_RYCz6l3e"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## 🔄 Relação entre gases e setores (análise avançada)"
+      ],
+      "metadata": {
+        "id": "e4vUWBSW6ibn"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Relação gás × setor\n",
+        "\n",
+        "Para a maioria dos gases, o setor de Mudança de Uso da Terra e Floresta aparece como principal responsável pelas emissões.\n",
+        "\n",
+        "Isso indica que o desmatamento e alterações no uso do solo têm impacto significativo não apenas no CO₂, mas também em outros gases do efeito estufa."
+      ],
+      "metadata": {
+        "id": "5BYxmJoT2D__"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.groupby(level = 0).idxmax()\n"
+      ],
+      "metadata": {
+        "id": "qn3RpvXp6wlI"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.groupby(level = 0).idxmax()\n"
+      ],
+      "metadata": {
+        "id": "5eaoURw-603t"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.groupby(level = 0).max()\n"
+      ],
+      "metadata": {
+        "id": "4Lntns6l63X4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "valores_max = gas_por_setor.groupby(level = 0).max().values\n"
+      ],
+      "metadata": {
+        "id": "X8JHUiB6668G"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "tabela_sumarizada = gas_por_setor.groupby(level = 0).idxmax()\n",
+        "tabela_sumarizada.insert(1, 'Quantidade de emissão',valores_max)\n",
+        "tabela_sumarizada\n"
+      ],
+      "metadata": {
+        "id": "cUU1BjQf68-s"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.swaplevel(0, 1)\n"
+      ],
+      "metadata": {
+        "id": "rN7jObj07Cfj"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "gas_por_setor.swaplevel(0, 1).groupby(level = 0).idxmax()\n"
+      ],
+      "metadata": {
+        "id": "i3-46oxe7E2F"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 📈 Análise temporal das emissões::"
+      ],
+      "metadata": {
+        "id": "L1D6YIxe8IRh"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissoes_por_ano.groupby('Ano')['Emissão'].sum().plot(figsize=(10,5))\n",
+        "plt.title('Evolução total das emissões ao longo do tempo')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "8NRPyXPr8RtI"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Evolução total\n",
+        "\n",
+        "Observa-se um crescimento significativo das emissões ao longo do tempo, com aceleração após os anos 1990.\n",
+        "\n",
+        "Esse aumento pode estar associado à inclusão de dados sobre uso da terra e expansão das atividades econômicas no país."
+      ],
+      "metadata": {
+        "id": "my2PUHsa8YBF"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        " Nesta etapa, analisamos a evolução das emissões ao longo do tempo, tanto de forma geral quanto separadamente por tipo de gás.\n",
+        "\n",
+        "O objetivo é identificar tendências, padrões de crescimento e possíveis mudanças estruturais ao longo dos anos."
+      ],
+      "metadata": {
+        "id": "35GxkfB28M5o"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Pico de emissão\n",
+        "\n",
+        "O ano de 2003 apresentou a maior média de emissões no período analisado, indicando um ponto crítico na série histórica."
+      ],
+      "metadata": {
+        "id": "AHMF9OsO8hN0"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "top_gases = emissoes_por_ano.groupby('Gás')['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .sort_values(ascending=False) \\\n",
+        "    .head(5) \\\n",
+        "    .index\n",
+        "\n",
+        "emissoes_por_ano[emissoes_por_ano['Gás'].isin(top_gases)] \\\n",
+        "    .groupby(['Ano', 'Gás'])['Emissão'] \\\n",
+        "    .sum() \\\n",
+        "    .unstack() \\\n",
+        "    .plot(figsize=(12,6))\n",
+        "\n",
+        "plt.title('Evolução dos principais gases')\n",
+        "plt.show()"
+      ],
+      "metadata": {
+        "id": "CR5BiIRW8j63"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### 📌 Insight – Diferença entre gases\n",
+        "\n",
+        "Os principais gases apresentam comportamentos distintos ao longo do tempo, indicando que as fontes de emissão não evoluem de forma uniforme.\n",
+        "\n",
+        "Enquanto alguns gases apresentam crescimento contínuo, outros mostram estabilidade ou redução, refletindo mudanças em setores específicos da economia."
+      ],
+      "metadata": {
+        "id": "fjX10eUm8p7o"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "evolucao = emissoes_por_ano.groupby('Ano')['Emissão'].sum()\n",
+        "\n",
+        "crescimento = ((evolucao.iloc[-1] - evolucao.iloc[0]) / evolucao.iloc[0]) * 100\n",
+        "\n",
+        "print(f'Crescimento total das emissões: {crescimento:.2f}%')"
+      ],
+      "metadata": {
+        "id": "_W4IIGgg8t2_"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 👥 Emissão per capita por estado"
+      ],
+      "metadata": {
+        "id": "CNf0X21_CgAv"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Nesta etapa, calculamos a emissão per capita de gases do efeito estufa por estado.\n",
+        "\n",
+        "Essa métrica permite uma análise mais justa, pois considera o tamanho da população, evitando distorções causadas por estados mais populosos."
+      ],
+      "metadata": {
+        "id": "p7k6Rov9Cl4w"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "emissao_estado = emissoes_por_ano.groupby('Estado')['Emissão'].sum()"
+      ],
+      "metadata": {
+        "id": "4iQi7VQiC3rM"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# populacao_estados['POPULAÇÃO'].astype(int)\n"
+      ],
+      "metadata": {
+        "id": "g89i40KaL0B6"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [],
+      "metadata": {
+        "id": "oW-IBRTpNmbG"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## 🎯 Conclusão Final\n",
+        "\n",
+        "A análise das emissões de gases do efeito estufa no Brasil entre 1970 e 2021 revelou que:\n",
+        "\n",
+        "- As emissões cresceram significativamente ao longo do tempo\n",
+        "- O CO₂ equivalente domina a matriz de emissões\n",
+        "- Entre os gases individuais, o CO₂ é o principal responsável\n",
+        "- O setor de uso da terra e floresta é o maior emissor\n",
+        "\n",
+        "Esses resultados indicam que políticas ambientais devem priorizar:\n",
+        "- Redução do desmatamento\n",
+        "- Controle de emissões energéticas\n",
+        "- Monitoramento de setores críticos\n",
+        "\n",
+        "A análise demonstra a importância de dados históricos para apoiar decisões estratégicas e ambientais."
+      ],
+      "metadata": {
+        "id": "U92dIJg8Atnu"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "A análise revelou que:\n",
+        "\n",
+        "- As emissões cresceram ao longo do tempo\n",
+        "- O CO₂ equivalente domina as emissões totais\n",
+        "- O setor de uso da terra é o principal responsável\n",
+        "- Existem diferenças relevantes entre os gases ao longo dos anos\n",
+        "\n",
+        "Esses resultados indicam que políticas ambientais devem priorizar setores específicos e gases dominantes para maior efetividade."
+      ],
+      "metadata": {
+        "id": "GqUGuOeR80jl"
+      }
+    }
+  ]
+}
